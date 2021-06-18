@@ -1,0 +1,63 @@
+---
+title: "RNA seq"
+author: "Stephen Kanyerezi"
+date: "6/18/2021"
+output: html_document
+---
+
+
+## DESeq
+### The Dataset
+
+Our goal for this experiment is to determine which Arabidopsis thaliana genes respond to nitrate. The dataset is a simple experiment where RNA is extracted from roots of independent plants and then sequenced. Two plants were treated with the control (KCl) and two samples were treated with Nitrate (KNO3).
+
+The sequences were processed to remove all low quality sequences, trim all low quality nucleotides, and finally aligned against the Arabidopsis genome using TopHat. Our analysis starts from here.
+
+We have been provided the following files:
+
+- 4 Bam files - An alignment file, one for each sample
+- Arabidopsis.gtf file – which contains information about the genes in Arabidopsis and where they are located in the genome.
+- Experiment design – a comma separated file containing meta data.
+- Gene description – Description about the function of the genes in Arabidopsis.
+    
+*Access the dataset from: https://drive.google.com/drive/folders/0B172nc4dAaaObEhfZkVxaUFLY28?usp=sharing*
+
+**Note: If one of the R packages is not loaded, you have to install it from Bioconductor**
+
+source("http://bioconductor.org/biocLite.R")
+BiocManager::install("Rsamtools")
+BiocManager::install("GenomicFeatures")
+BiocManager::install("GenomicAlignments")
+BiocManager::install("DESeq")
+
+```{r load packages, echo=TRUE, results='asis'}
+library(Rsamtools)
+library(GenomicFeatures)
+library(GenomicAlignments)
+library(DESeq2)
+```
+
+## The Data Files
+### The Alignment Files
+
+The alignment files are in **bam** format. These files will not be loaded into R, but rather simply pointed to by a reference/variable. The alignment files provided are about 15x smaller compared to an average RNA-seq sample run today. Also there will be triplicates of 3 or more different conditions resulting in much more than 4 sample. So you can imagine the amount of space and memory R would need if all that data was stored in the workspace.
+
+To do point to the bam files we will use **Rsamtools**
+
+```{r point_to_alignment_files, echo=TRUE, results='asis'}
+(bamfiles = BamFileList(dir(path = "RNAseqKatari/", pattern=".bam")))
+```
+
+### The Annotation File
+
+GTF file is very similar to a GFF file. Their purpose is to store the location of genome features, such as genes, exons, and CDS. It is a tab delimited flat file which looks something like this.
+
+
+We will load the GTF file using **GenomicFeatures** and group the exons based on the gene annotation.
+
+```{r txdb, echo=TRUE}
+txdb <- makeTxDbFromGFF("RNAseqKatari/Arabidopsis.gtf", format="gtf")
+txdb
+(ebg <- exonsBy(txdb, by="gene"))
+
+```
